@@ -1,5 +1,20 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>הבית שלנו</title>
-<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="לוח משימות הבית של המשפחה">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="theme-color" content="#F6F4FC" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1C1928" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="הבית שלנו">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Varela+Round&display=swap">
 <style>
@@ -29,6 +44,10 @@
   --c-elad:#A9D2EA; --c-ravid:#EDB5C4; --c-adam:#A9DCC4; --c-or:#EBD48F; --c-alma:#C6B8EC;
   --shadow:0 2px 10px rgba(0,0,0,.25); color-scheme:dark}
 *{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
+body{margin:0;padding-top:env(safe-area-inset-top,0px);min-height:100vh}
+[hidden]{display:none!important}
+img{max-width:100%}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
 button{font:inherit;color:inherit;cursor:pointer}
 button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
@@ -167,12 +186,21 @@ select,input[type=text]{font:inherit;color:var(--ink);background:var(--card);bor
 .answer{background:var(--card2);border-radius:18px;padding:12px;border:1.5px dashed var(--line)}
 .summary{background:var(--card);border-radius:18px;padding:12px 14px;box-shadow:var(--shadow);font-size:.9rem}
 .summary ul{margin:4px 0 0;padding-inline-start:18px}
+.install{display:flex;align-items:center;gap:12px;background:var(--card);border-radius:20px;padding:10px 12px;box-shadow:var(--shadow);margin-block:8px}
+.install img{width:44px;height:44px;border-radius:12px;flex:none}
+.install .t{flex:1;min-width:0;font-size:.88rem}
+.install b{font-family:var(--f-head);font-weight:600;display:block;font-size:.95rem}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(140px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:9px 18px;border-radius:999px;z-index:60;font-size:.9rem}
 </style>
-
+</head>
+<body>
 <div id="app" dir="rtl"></div>
 <div id="layer" dir="rtl"></div>
 
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
 <script>
 document.documentElement.setAttribute('dir','rtl');
 document.documentElement.setAttribute('lang','he');
@@ -296,22 +324,44 @@ function subMonth(){
     S.monthDone=snap.docs.map(d=>d.data());render();
   },e=>{});
 }
+const DEFAULT_TASKS=[{"id": "dishes", "title": "מדיח כלים", "icon": "dish", "order": 1, "slots": [{"day": 0, "label": "פעם ראשונה", "assignee": "alma", "pool": null}, {"day": 0, "label": "פעם שנייה", "assignee": null, "pool": ["elad", "ravid"]}, {"day": 1, "label": "פעם ראשונה", "assignee": "or", "pool": null}, {"day": 1, "label": "פעם שנייה", "assignee": null, "pool": ["elad", "ravid"]}, {"day": 2, "label": "פעם ראשונה", "assignee": "alma", "pool": null}, {"day": 2, "label": "פעם שנייה", "assignee": null, "pool": ["elad", "ravid"]}, {"day": 3, "label": "פעם ראשונה", "assignee": "adam", "pool": null}, {"day": 3, "label": "פעם שנייה", "assignee": null, "pool": ["elad", "ravid"]}, {"day": 4, "label": "פעם ראשונה", "assignee": null, "pool": null}, {"day": 4, "label": "פעם שנייה", "assignee": null, "pool": ["elad", "ravid"]}, {"day": 5, "label": "פעם ראשונה", "assignee": "or", "pool": null}, {"day": 5, "label": "פעם שנייה", "assignee": null, "pool": ["elad", "ravid"]}, {"day": 6, "label": "פעם ראשונה", "assignee": "adam", "pool": null}, {"day": 6, "label": "פעם שנייה", "assignee": null, "pool": ["elad", "ravid"]}]}, {"id": "laundry", "title": "כביסה", "icon": "laundry", "order": 2, "slots": [{"day": null, "label": "", "assignee": "alma", "pool": null}, {"day": 3, "label": "", "assignee": "adam", "pool": null}, {"day": 6, "label": "", "assignee": "or", "pool": null}]}, {"id": "room", "title": "סידור החדר", "icon": "bed", "order": 3, "slots": [{"day": null, "label": "", "assignee": "elad", "pool": null}, {"day": null, "label": "", "assignee": "ravid", "pool": null}, {"day": null, "label": "", "assignee": "adam", "pool": null}, {"day": null, "label": "", "assignee": "or", "pool": null}, {"day": null, "label": "", "assignee": "alma", "pool": null}]}, {"id": "stairs", "title": "טאטוא מדרגות", "icon": "broom", "order": 4, "slots": [], "rotation": {"pool": ["adam", "or", "alma"], "anchor": "2026-11-15"}}];
+async function seedIfNeeded(db){
+  const meta=db.collection('meta').doc('seed');
+  const m=await meta.get();
+  if(m.exists)return;
+  const batch=firebase.firestore().batch();
+  DEFAULT_TASKS.forEach(({id,...t})=>batch.set(db.collection('tasks').doc(id),t));
+  batch.set(meta,{at:Date.now()});
+  await batch.commit();
+}
+async function connectDb(){
+  const cfg=window.FIREBASE_CONFIG,fam=window.FAMILY_ID;
+  if(!window.firebase||!cfg||!cfg.apiKey||!fam)return null;
+  firebase.initializeApp(cfg);
+  const fs=firebase.firestore();
+  try{await fs.enablePersistence({synchronizeTabs:true})}catch(e){}
+  await firebase.auth().signInAnonymously();
+  return fs.collection('families').doc(fam);
+}
 async function boot(){
   render();
-  const db=await (window.claude?.use?.('db')??null);
+  let db=null;
+  try{db=await connectDb()}catch(e){console.error(e);S.dbState='error';render();return}
   if(!db){S.dbState='none';render();return}
   S.db=db;S.dbState='ok';
   slowTimer=setTimeout(()=>{if(!S.tasksLoaded){S.slow=true;render()}},10000);
+  let seeded=false;
   db.collection('tasks').onSnapshot(snap=>{
     S.tasks=snap.docs.map(d=>({id:d.id,...d.data()}));
-    if(!snap.metadata.fromCache){S.tasksLoaded=true;S.slow=false;clearTimeout(slowTimer)}
+    if(!snap.metadata.fromCache){S.tasksLoaded=true;S.slow=false;clearTimeout(slowTimer);
+      if(snap.empty&&!seeded){seeded=true;seedIfNeeded(db).catch(e=>console.error(e))}}
     render();
   },e=>{S.tasksLoaded=true;S.slow=false;clearTimeout(slowTimer);toast('לא הצלחנו לטעון את המשימות');render()});
   subWeek();subMonth();
 }
 
 async function markDone(occ,by){
-  if(!S.db){toast('אפשר לסמן רק כשהדף פתוח ב-claude.ai');return}
+  if(!S.db){toast('אין חיבור לשמירה עדיין');return}
   const wkDate=parse(S.week);
   let day=occ.day;
   if(day===null){const t=weekStart(today);day=ymd(t)===S.week?today.getDay():6}
@@ -349,7 +399,8 @@ function occRow(o,opts={}){
   </button>`;
 }
 function emptyState(){
-  if(S.dbState==='none')return `<div class="note">כדי לשמור ולשתף את הסימונים בין כל בני המשפחה, פתחו את הדף ב-claude.ai כשאתם מחוברים.</div>`;
+  if(S.dbState==='none')return `<div class="note">האפליקציה עוד לא מחוברת למסד הנתונים. צריך למלא את הקובץ firebase-config.js (ההוראות ב-README).</div>`;
+  if(S.dbState==='error')return `<div class="note">לא הצלחנו להתחבר. בדקו את החיבור לאינטרנט ונסו לפתוח שוב.</div>`;
   if(!S.tasksLoaded)return `<div class="empty">${S.slow?'עדיין לא הצלחנו להתחבר. בדקו את החיבור לאינטרנט.':'טוען את המשימות של הבית…'}</div>`;
   return `<div class="day"><p class="empty">עוד אין משימות. לחצו על "הוסף משימה" כדי ליצור את הראשונה.</p></div>`;
 }
@@ -570,11 +621,30 @@ function chatAct(act,el){
 }
 function toSummary(){say('זה הסיכום. לשמור?');S.chat.step='summary'}
 async function saveTask(){
-  if(!S.db){toast('אפשר לשמור רק כשהדף פתוח ב-claude.ai');return}
+  if(!S.db){toast('אין חיבור לשמירה עדיין');return}
   const t=buildTask();
   try{await S.db.collection('tasks').add(t);S.sheet=null;S.chat=null;toast(`המשימה "${t.title}" נוספה ✓`);render()}
   catch(e){toast(e?.code==='quota_exceeded'?'אין מקום לעוד משימות':'השמירה נכשלה, נסו שוב')}
 }
+
+
+/* ---------- install banner ---------- */
+let deferredPrompt=null;
+const isStandalone=()=>window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+let installHidden=false;try{installHidden=localStorage.getItem('chores.noinstall')==='1'}catch(e){}
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;render()});
+window.addEventListener('appinstalled',()=>{deferredPrompt=null;installHidden=true;render()});
+function installBanner(){
+  if(isStandalone()||installHidden)return '';
+  let how='';
+  if(deferredPrompt)how=`<button class="btn sm" data-act="install">התקנה</button>`;
+  else if(isIOS)how='';
+  else return '';
+  const txt=isIOS&&!deferredPrompt?'בספארי: לחצו על כפתור השיתוף <b style="display:inline">⬆︎</b> ואז "הוספה למסך הבית"':'להתקנה כאפליקציה בטלפון';
+  return `<div class="install"><img src="icons/icon-192.png" alt=""><div class="t"><b>להתקין את "הבית שלנו"</b>${txt}</div>${how}<button class="iconbtn" data-act="noinstall" aria-label="הסתרה">✕</button></div>`;
+}
+if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))}
 
 /* ---------- main render ---------- */
 function render(){
@@ -584,6 +654,7 @@ function render(){
   if(S.tab==='week')body=viewWeek();else if(S.tab==='mine')body=viewMine();else if(S.tab==='stars')body=viewStars();else body=viewTasks();
   const sub={week:'מי עושה מה השבוע',mine:'המשימות שלי',stars:'כוכבים ופרסים',tasks:'ניהול המשימות'}[S.tab];
   app.innerHTML=`<header class="hero">${HOUSE}<div><h1>הבית שלנו</h1><p>${sub}</p></div></header>
+  ${installBanner()}
   ${S.slow&&S.tasks.length?'<div class="note">ייתכן שהנתונים לא מעודכנים. בודקים את החיבור…</div>':''}
   ${body}
   <button class="fab" data-act="add">＋ הוסף משימה</button>
@@ -614,6 +685,8 @@ document.addEventListener('click',e=>{
   switch(a){
     case 'tab':S.tab=el.dataset.k;S.confirmDel=null;try{localStorage.setItem('chores.tab',S.tab)}catch(_){}render();window.scrollTo(0,0);break;
     case 'wk':S.week=ymd(addDays(parse(S.week),7*+el.dataset.n));subWeek();render();break;
+    case 'install':if(deferredPrompt){deferredPrompt.prompt();deferredPrompt.userChoice.finally(()=>{deferredPrompt=null;render()})}break;
+    case 'noinstall':installHidden=true;try{localStorage.setItem('chores.noinstall','1')}catch(_){}render();break;
     case 'towk':S.week=ymd(weekStart(today));subWeek();render();break;
     case 'mo':S.month=shiftMonth(S.month,+el.dataset.n);subMonth();render();break;
     case 'me':S.me=el.dataset.id;try{localStorage.setItem('chores.me',S.me)}catch(_){}render();break;
@@ -653,3 +726,5 @@ document.getElementById('layer').addEventListener('click',e=>{if(e.target.classL
 
 boot();
 </script>
+</body>
+</html>

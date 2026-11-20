@@ -1,0 +1,10 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Only signed-in (anonymous) app users who know the secret family id can read/write.
+    // Listing the "families" collection itself is not allowed, so the id stays private.
+    match /families/{familyId}/{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
